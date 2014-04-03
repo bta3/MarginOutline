@@ -1,0 +1,253 @@
+% MarginOutline
+% created by Byron Ahn
+% email address: switch the words before and after the period in ahn.byron@gmail.com
+% 2014.04.03
+
+%There are four options for this package:
+%	- constantsize:	forces constant font size
+%	- zeroexindent:	forces all linguex/expex examples to be uniformly indented
+%	- allbullets:	every item has a bullet point (even \1s)
+%	- varvertical:	items have a variable vertical spacing (when two items of the same or greater depth occur in a row, the spacing is made smaller)
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{MarginOutline}
+
+\RequirePackage{ifthen}
+\RequirePackage{titlesec}
+
+\newif\if@anyExIndent\@anyExIndenttrue
+\newif\if@zeroExIndent\@zeroExIndentfalse
+\newif\if@expexloaded\@expexloadedfalse
+\newif\if@linguexloaded\@linguexloadedfalse
+\newif\if@varFontSizes\@varFontSizestrue
+\newif\if@allbullets\@allbulletsfalse
+\newif\if@varvertical\@varverticaltrue
+\newcommand{\exampleoffset}[1][]{}
+
+\DeclareOption{zeroexindent}{
+	\@anyExIndentfalse
+	\@zeroExIndenttrue
+}
+\DeclareOption{constantsize}{
+	\@varFontSizesfalse
+}
+\DeclareOption{allbullets}{
+	\@allbulletstrue
+}
+\DeclareOption{varvertical}{
+	\@varverticalfalse
+}
+\ProcessOptions\relax
+
+
+
+%%%%%%%%%%%%%%%
+%make sections, subsections and subsubsections not indented
+%%%%%%%%%%%%%%%
+\newcommand{\sectionbreak}{\ontheleft{0em}\exampleoffset\setcounter{thisoutlinedepth}{0}\setcounter{prevoutlinedepth}{0}}
+\newcommand{\subsectionbreak}{\ontheleft{0em}\exampleoffset\setcounter{thisoutlinedepth}{0}\setcounter{prevoutlinedepth}{0}}
+\newcommand{\subsubsectionbreak}{\ontheleft{0em}\exampleoffset\setcounter{thisoutlinedepth}{0}\setcounter{prevoutlinedepth}{0}}
+
+
+
+%%%%%%%%%%%%%%%
+%handle example indentation
+%%%%%%%%%%%%%%%
+\AtBeginDocument{%
+\@ifpackageloaded{expex}{\@expexloadedtrue}{\@expexloadedfalse}
+\@ifpackageloaded{linguex}{\@linguexloadedtrue}{\@linguexloadedfalse}
+\if@anyExIndent%if we're doing varible indenting, then...
+	\if@expexloaded%if expex is loaded, then...
+		\renewcommand{\exampleoffset}[1][\exleftskip]{\lingset{numoffset=#1}}%
+	\else%	if expex isn't loaded, then...
+		\if@linguexloaded%if linguex is loaded, then...
+			\renewcommand{\exampleoffset}[1][\exleftskip]{\setlength{\Exindent}{#1}}
+		\fi
+	\fi
+\else%if we are NOT doing varible indenting, then...
+	\if@expexloaded%if expex is loaded, then...
+		\renewcommand{\exampleoffset}[1][\exadded]{\lingset{numoffset=#1}}%
+	\else%	if expex isn't loaded, then...
+		\if@linguexloaded%if linguex is loaded, then...
+			\renewcommand{\exampleoffset}[1][\exadded]{\setlength{\Exindent}{#1}}
+		\fi
+	\fi
+\fi
+}
+
+
+
+%%%%%%%%%%%%%%%
+%keeping track of outline depth
+%%%%%%%%%%%%%%%
+\newcounter{thisoutlinedepth}
+\setcounter{thisoutlinedepth}{0}
+\newcounter{prevoutlinedepth}
+\setcounter{prevoutlinedepth}{0}
+\newcommand{\outlinedepth}[1]{\setcounter{prevoutlinedepth}{\value{thisoutlinedepth}}\setcounter{thisoutlinedepth}{#1}}
+
+
+
+%%%%%%%%%%%%%%%
+%defining lengths for spacing stuff
+%%%%%%%%%%%%%%%
+\newlength{\exleftskip}
+\newlength{\exadded}
+\setlength{\exadded}{0pt}
+\newcommand{\customexindent}[1]{\setlength{\exadded}{#1}}
+
+\newlength{\outlineindent}%indent for each level
+\setlength{\outlineindent}{1.75\fontdimen6\font}%each indent will be 1.75x the size of the normal font size
+\newlength{\standardoutlineskip}%vertical spacing for each item
+\setlength{\standardoutlineskip}{\fontdimen6\font plus.22\fontdimen6\font minus.04\fontdimen6\font}
+\newlength{\outlineskip}%vertical spacing for each item
+\setlength{\outlineskip}{\standardoutlineskip}
+\newcommand{\outlineskipfactor}[1]{\setlength{\outlineskip}{#1\standardoutlineskip}}
+
+\newcommand{\toofull}[1][-10em]{\hspace*{#1}}
+
+\newcommand{\outlinespacingstuff}{%
+\ifnum\value{prevoutlinedepth}=0
+	\par
+\else
+	\ifnum\value{thisoutlinedepth}<\value{prevoutlinedepth}%
+		\vskip\outlineskip\par%`
+	\else%
+		\vskip.5\outlineskip\par%
+	\fi%
+\fi
+}
+\if@varvertical
+	\renewcommand{\outlinespacingstuff}{\vskip\outlineskip\par}
+\fi
+
+
+
+%%%%%%%%%%%%%%%
+%add the indentation to outline item (and example indentation, if applicable)
+%%%%%%%%%%%%%%%
+\newcommand{\ontheleft}[1]{
+	\setlength{\leftskip}{#1}
+	\if@allbullets
+		\addtolength{\leftskip}{3ex}
+	\fi
+	\setlength{\exleftskip}{\leftskip}
+	\addtolength{\exleftskip}{\exadded}
+}
+
+
+
+%%%%%%%%%%%%%%%
+%defining fontsize commands in a way that the size is variable if desired, constant if not
+%%%%%%%%%%%%%%%
+\newcommand{\firstfontsize}{}
+\newcommand{\secondfontsize}{}
+\newcommand{\thirdfontsize}{}
+\newcommand{\fourthfontsize}{}
+\if@varFontSizes
+	\renewcommand{\firstfontsize}{\normalsize}
+	\renewcommand{\secondfontsize}{\small}
+	\renewcommand{\thirdfontsize}{\footnotesize}
+	\renewcommand{\fourthfontsize}{\scriptsize}
+\fi
+
+
+
+%%%%%%%%%%%%%%%
+%define various bullet symbols in a way that helps avoid conflict with other symbol packages
+%%%%%%%%%%%%%%%
+\DeclareFontFamily{U}{thismatha}{\hyphenchar\font45}
+\DeclareFontShape{U}{thismatha}{m}{n}{
+      <5> <6> <7> <8> <9> <10> gen * matha
+      <10.95> matha10 <12> <14.4> <17.28> <20.74> <24.88> matha12
+      }{}
+\DeclareSymbolFont{thismatha}{U}{thismatha}{m}{n}
+\DeclareFontSubstitution{U}{thismatha}{m}{n}
+\DeclareFontFamily{U}{thismathb}{\hyphenchar\font45}
+\DeclareFontShape{U}{thismathb}{m}{n}{
+      <5> <6> <7> <8> <9> <10> gen * mathb
+      <10.95> mathb10 <12> <14.4> <17.28> <20.74> <24.88> mathb12
+      }{}
+\DeclareSymbolFont{thismathb}{U}{thismathb}{m}{n}
+\DeclareFontSubstitution{U}{thismathb}{m}{n}
+	\DeclareMathSymbol{\thissmblacktriangleright}{2}{thismathb}{"9F}
+	\DeclareMathSymbol{\thissmsquare}        {2}{thismathb}{"05}
+	\DeclareMathSymbol{\thissqbullet}      {2}{thismathb}{"0D}
+	\DeclareMathSymbol{\thissmalltriangleright}{2}{thismathb}{"9B}
+	\DeclareMathSymbol{\thisdrsh}                  {3}{thismathb}{"EB}
+	\DeclareMathSymbol{\thisvarstar}       {2}{thismatha}{"0F}
+	\DeclareMathSymbol{\thisblackdiamond}  {2}{thismathb}{"0C}
+\newcommand{\drarrow}{\raisebox{.8ex}{\ensuremath{\thisdrsh}}}
+\newcommand{\pointright}{{\fontfamily{pzd}\fontencoding{U}\fontseries{m}\fontshape{n}\large\selectfont\char43}}
+
+
+
+%%%%%%%%%%%%%%%
+%define bullets for outline items
+%%%%%%%%%%%%%%%
+\newcommand{\thefirstbullet}{\ensuremath{\thisblackdiamond}}
+\newcommand{\thesecondbullet}{\ensuremath{\thissmblacktriangleright}}
+\newcommand{\thethirdbullet}{\ensuremath{\thissqbullet}}
+\newcommand{\thefourthbullet}{\ensuremath{\diamond}}
+\newcommand{\thefifthbullet}{\ensuremath{\thissmalltriangleright}}
+\newcommand{\thesixthbullet}{\ensuremath{\thissmsquare}}
+\newcommand{\theseventhbullet}{\ensuremath{\thisvarstar}}
+\newcommand{\theeighthbullet}{\ensuremath{\circ}}
+%\newcommand{\theninthbullet}{}
+%\newcommand{\thetenthbullet}{}
+%
+%The commands below are used only within this .sty file. Do not change these unless you know what you are doing.
+\newcommand{\@bulletlevelone}{}
+\newcommand{\@bulletleveltwo}{\thefirstbullet}
+\newcommand{\@bulletlevelthree}{\thesecondbullet}
+\newcommand{\@bulletlevelfour}{\thethirdbullet}
+\newcommand{\@bulletlevelfive}{\thefourthbullet}
+\newcommand{\@bulletlevelsix}{\thefifthbullet}
+\newcommand{\@bulletlevelseven}{\thesixthbullet}
+\newcommand{\@bulletleveleight}{\theseventhbullet}
+%\newcommand{\@bulletlevelnine}{\theninthbullet}
+%\newcommand{\@bulletlevelten}{\thetenthbullet}
+\if@allbullets
+	\renewcommand{\@bulletlevelone}{\thefirstbullet}
+	\renewcommand{\@bulletleveltwo}{\thesecondbullet}
+	\renewcommand{\@bulletlevelthree}{\thethirdbullet}
+	\renewcommand{\@bulletlevelfour}{\thefourthbullet}
+	\renewcommand{\@bulletlevelfive}{\thefifthbullet}
+	\renewcommand{\@bulletlevelsix}{\thesixthbullet}
+	\renewcommand{\@bulletlevelseven}{\theseventhbullet}
+	\renewcommand{\@bulletleveleight}{\theeighthbullet}
+%	\renewcommand{\@bulletlevelnine}{\theninthbullet}
+%	\renewcommand{\@bulletlevelten}{\thetenthbullet}
+\fi
+
+
+
+%%%%%%%%%%%%%%%
+%define commands \1...\8 for actual outline items
+%%%%%%%%%%%%%%%
+\newcommand{\1}[1][\@bulletlevelone]{\outlinedepth{1}\outlinespacingstuff\ontheleft{0em}\exampleoffset\firstfontsize\noindent\hskip-4ex\parbox{4ex}{\raggedleft\normalsize#1~~~}}
+
+\newcommand{\2}[1][\@bulletleveltwo]{\outlinedepth{2}\outlinespacingstuff\ontheleft{1.25\outlineindent}\exampleoffset\noindent\firstfontsize{\hskip-4ex\parbox{4ex}{\raggedleft{#1}~~~}}}
+
+\newcommand{\3}[1][\@bulletlevelthree]{\outlinedepth{3}\outlinespacingstuff\ontheleft{2\outlineindent}\exampleoffset\noindent\firstfontsize\hskip-4ex\parbox{4ex}{\raggedleft\normalsize#1~~~}}
+
+\newcommand{\4}[1][\@bulletlevelfour]{\outlinedepth{4}\outlinespacingstuff\ontheleft{3\outlineindent}\exampleoffset\noindent\secondfontsize\hskip-4ex\parbox{4ex}{\raggedleft\normalsize#1~~~}}
+
+\newcommand{\5}[1][\@bulletlevelfive]{\outlinedepth{5}\outlinespacingstuff\ontheleft{4\outlineindent}\exampleoffset\noindent\secondfontsize\hskip-4ex\parbox{4ex}{\raggedleft\normalsize#1~~~}}
+
+\newcommand{\6}[1][\@bulletlevelsix]{\outlinedepth{6}\outlinespacingstuff\ontheleft{5\outlineindent}\exampleoffset\noindent\secondfontsize\hskip-4ex\parbox{4ex}{\raggedleft\normalsize#1~~~}}
+
+\newcommand{\7}[1][\@bulletlevelseven]{\outlinedepth{7}\outlinespacingstuff\ontheleft{6\outlineindent}\exampleoffset\noindent\thirdfontsize\hskip-4ex\parbox{4ex}{\raggedleft\normalsize#1~~~}}
+
+\newcommand{\8}[1][\@bulletleveleight]{\outlinedepth{8}\outlinespacingstuff\ontheleft{7\outlineindent}\exampleoffset\noindent\thirdfontsize\hskip-4ex\parbox{4ex}{\raggedleft\normalsize#1~~~}}
+
+
+
+%%%%%%%%%%%%%%%
+%define \startoutline and \stopoutline commands, for spacing prettiness
+%%%%%%%%%%%%%%%
+\newcommand{\startoutline}[1][\@bulletlevelone]{\exampleoffset\par\ontheleft{0em}\normalsize\noindent\vskip0ex}
+
+\newcommand{\stopoutline}[1][\exadded]{\par\ontheleft{0em}\exampleoffset[#1]\vskip0ex}
+
+
+%end of package
