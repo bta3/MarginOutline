@@ -43,7 +43,6 @@
 	\@varFontSizesfalse
 }
 \DeclareOption{allbullets}{
-%	\@ifclassloaded{beamer}{\@allbulletsbeamertrue}{\@allbulletstrue}
 	\@allbulletstrue
 }
 \DeclareOption{beamerpause}{
@@ -107,19 +106,19 @@
 \AtBeginDocument{%
 \@ifpackageloaded{expex}{\@expexloadedtrue}{\@expexloadedfalse}
 \@ifpackageloaded{linguex}{\@linguexloadedtrue}{\@linguexloadedfalse}
-\if@anyExIndent%if we're doing variable indenting, then make the indentation equal to \exleftskip (which corresponds to \leftskip + \exadded; and \leftskip is controlled by level of indentation)
-	\if@expexloaded%if expex is loaded, then...
+\if@anyExIndent
+	\if@expexloaded
 		\renewcommand{\exampleoffset}[1][\exleftskip]{\lingset{numoffset=#1}}%
-	\else%	if expex isn't loaded, then...
-		\if@linguexloaded%if linguex is loaded, then...
+	\else
+		\if@linguexloaded
 			\renewcommand{\exampleoffset}[1][\exleftskip]{\setlength{\Exindent}{#1}}
 		\fi
 	\fi
-\else%if we are NOT doing variable indenting, then make the indentation equal to \exadded (ignoring \leftskip)
-	\if@expexloaded%if expex is loaded, then...
+\else
+	\if@expexloaded
 		\renewcommand{\exampleoffset}[1][\exadded]{\lingset{numoffset=#1}}%
-	\else%	if expex isn't loaded, then...
-		\if@linguexloaded%if linguex is loaded, then...
+	\else
+		\if@linguexloaded
 			\renewcommand{\exampleoffset}[1][\exadded]{\setlength{\Exindent}{#1}}
 		\fi
 	\fi
@@ -304,9 +303,6 @@
 \ifnum\value{bulletnumber}=8\theeighthbullet
 	\else
 \ifnum\value{bulletnumber}=9\theninthbullet
-%	\else
-%\ifnum\value{bulletnumber}=10\thetenthbullet
-%\fi
 \fi
 \fi
 \fi
@@ -327,7 +323,6 @@
 \newcommand{\theseventhbullet}{\ensuremath{\thisvarstar}}
 \newcommand{\theeighthbullet}{\ensuremath{\circ}}
 \newcommand{\theninthbullet}{\ensuremath{\bullet}}
-%\newcommand{\thetenthbullet}{}
 
 
 
@@ -377,28 +372,11 @@
 \newcommand{\stopoutline}[1][\exadded]{\exampleoffset[#1]\par\vskip0pt\setlength{\leftskip}{0pt}\normalsize\noindent\setcounter{thisoutlinedepth}{0}\setcounter{prevoutlinedepth}{0}}
 %
 %
-%%%%%%%%%%%%%%%%
-%%define \CenterBox
-%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%
+%%define CenterBox environment
+%%%%%%%%%%%%%%%%%%
 %
-%\NewDocumentCommand\CenterBox{s O{white} O{1pt} m m}{%
-%\stopoutline
-%\begin{center}
-%\fboxrule#3
-%	\vspace*{.5\outlineskip}
-%	{\fcolorbox{black}{#2}{
-%	\begin{minipage}{.65\linewidth}
-%	{
-%	\vspace*{.5\myex}
-%	\IfBooleanTF{#1}{}{\textbf{\textsc{#4}}\\[-.5\baselineskip]
-%	\hrule\vspace*{.5\baselineskip}}
-%	#5\vspace*{1\myex}
-%	}
-%	\fboxrule8pt
-%	\end{minipage}
-%	}}%\vspace*{.5\outlineskip}
-%\end{center}
-%}
+%
 \newsavebox{\myCbox}
 \NewDocumentEnvironment{CenterBox}{s O{white} O{1pt} m}{%
 \stopoutline
@@ -445,6 +423,13 @@
 \par\noindent
 }
 
+%
+%
+%%%%%%%%%%%%%%%%%%%
+%%define frameoutline environment
+%%%%%%%%%%%%%%%%%%%
+%
+%
 \newenvironment{frameoutline}[1][c]{%
 	\begin{frame}[#1]%
 	\ZeroOutLeft\ignorespaces%
