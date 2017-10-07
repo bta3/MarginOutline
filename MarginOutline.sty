@@ -1,18 +1,22 @@
-% MarginOutline
+% MarginOutline.sty, v1.3
 % created by Byron Ahn
 % email address: switch the words before and after the period in ahn.byron@gmail.com
-% 2014.04.03
-
+% 2017.10.07
+%
 %There are four options for this package:
 %	- constantsize:	forces constant font size
 %	- zeroexindent:	forces all linguex/expex examples to be uniformly indented
 %	- allbullets:	every item has a bullet point (even \1s)
 %	- varvertical:	items have a variable vertical spacing (when two items of the same or greater depth occur in a row, the spacing is made smaller)
+%	- beamerpause:	when in the beamer class is loaded and this option is invoked, pauses are inserted between items.
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{MarginOutline}
 
+\RequirePackage{xcolor}
 \RequirePackage{ifthen}
-\RequirePackage{titlesec}
+\RequirePackage{xparse}
+
+\@ifclassloaded{beamer}{}{\@ifclassloaded{sciposter}{}{\RequirePackage{titlesec}}}
 
 \newif\if@anyExIndent\@anyExIndenttrue
 \newif\if@zeroExIndent\@zeroExIndentfalse
@@ -20,10 +24,18 @@
 \newif\if@linguexloaded\@linguexloadedfalse
 \newif\if@varFontSizes\@varFontSizestrue
 \newif\if@allbullets\@allbulletsfalse
+\newif\if@allbulletsbeamer\@allbulletsbeamerfalse
 \newif\if@varvertical\@varverticaltrue
+\newif\if@beamerpauses\@beamerpausesfalse
+\newif\if@beamerpauseatstart\@beamerpauseatstartfalse
 \newcommand{\exampleoffset}[1][]{}
 
-\DeclareOption{zeroexindent}{
+
+\DeclareOption{constantexindent}{
+	\@anyExIndentfalse
+	\@zeroExIndenttrue
+}
+\DeclareOption{zeroexindent}{%for backwards compatibility - this has been replaced with "constantexindent" in the documentation
 	\@anyExIndentfalse
 	\@zeroExIndenttrue
 }
@@ -31,7 +43,15 @@
 	\@varFontSizesfalse
 }
 \DeclareOption{allbullets}{
+%	\@ifclassloaded{beamer}{\@allbulletsbeamertrue}{\@allbulletstrue}
 	\@allbulletstrue
+}
+\DeclareOption{beamerpause}{
+	\@beamerpausestrue
+}
+\DeclareOption{beamerpauseatstart}{
+	\@beamerpausestrue
+	\@beamerpauseatstarttrue
 }
 \DeclareOption{varvertical}{
 	\@varverticalfalse
@@ -39,14 +59,46 @@
 \ProcessOptions\relax
 
 
+%%%%%%%%%%%%%%%
+%define command \exgotodepth
+%%%%%%%%%%%%%%%
+
+\newcommand{\manualsetexindent}[1]{
+	\setlength{\exleftskip}{#1}
+	\if@allbullets
+		\addtolength{\exleftskip}{1\myex}
+	\fi
+	\addtolength{\exleftskip}{\exadded}
+	\exampleoffset[\exleftskip]
+}
+\newcommand{\exgotodepth}[1]{
+\def\tempexskip{\numexpr #1 - 1\relax}
+\manualsetexindent{\tempexskip\outlineindent}
+}
+
 
 %%%%%%%%%%%%%%%
 %make sections, subsections and subsubsections not indented
 %%%%%%%%%%%%%%%
-\newcommand{\sectionbreak}{\ontheleft{0em}\exampleoffset\setcounter{thisoutlinedepth}{0}\setcounter{prevoutlinedepth}{0}}
-\newcommand{\subsectionbreak}{\ontheleft{0em}\exampleoffset\setcounter{thisoutlinedepth}{0}\setcounter{prevoutlinedepth}{0}}
-\newcommand{\subsubsectionbreak}{\ontheleft{0em}\exampleoffset\setcounter{thisoutlinedepth}{0}\setcounter{prevoutlinedepth}{0}}
-
+\newcommand{\ZeroOutLeft}{
+\ontheleft{0pt}\exampleoffset\setcounter{thisoutlinedepth}{0}\setcounter{prevoutlinedepth}{0}
+}%
+\@ifclassloaded{beamer}
+{
+	\AtBeginSection{\ZeroOutLeft}
+	\AtBeginSubsection{\ZeroOutLeft}
+	\AtBeginSubsubsection{\ZeroOutLeft}
+}
+{
+	\@ifclassloaded{sciposter}
+	{
+	}
+	{
+	\newcommand{\sectionbreak}{\ZeroOutLeft}
+	\newcommand{\subsectionbreak}{\ZeroOutLeft}
+	\newcommand{\subsubsectionbreak}{\ZeroOutLeft}
+	}
+}
 
 
 %%%%%%%%%%%%%%%
@@ -55,7 +107,7 @@
 \AtBeginDocument{%
 \@ifpackageloaded{expex}{\@expexloadedtrue}{\@expexloadedfalse}
 \@ifpackageloaded{linguex}{\@linguexloadedtrue}{\@linguexloadedfalse}
-\if@anyExIndent%if we're doing varible indenting, then...
+\if@anyExIndent%if we're doing variable indenting, then make the indentation equal to \exleftskip (which corresponds to \leftskip + \exadded; and \leftskip is controlled by level of indentation)
 	\if@expexloaded%if expex is loaded, then...
 		\renewcommand{\exampleoffset}[1][\exleftskip]{\lingset{numoffset=#1}}%
 	\else%	if expex isn't loaded, then...
@@ -63,7 +115,7 @@
 			\renewcommand{\exampleoffset}[1][\exleftskip]{\setlength{\Exindent}{#1}}
 		\fi
 	\fi
-\else%if we are NOT doing varible indenting, then...
+\else%if we are NOT doing variable indenting, then make the indentation equal to \exadded (ignoring \leftskip)
 	\if@expexloaded%if expex is loaded, then...
 		\renewcommand{\exampleoffset}[1][\exadded]{\lingset{numoffset=#1}}%
 	\else%	if expex isn't loaded, then...
@@ -90,24 +142,29 @@
 %%%%%%%%%%%%%%%
 %defining lengths for spacing stuff
 %%%%%%%%%%%%%%%
+\newlength{\myex}
+%\ExplSyntaxOn
+%\setlength{\myex}{{\fp_to_decimal:n {1ex/1pt}}pt}
+\setlength{\myex}{8pt}
+%\ExplSyntaxOff
 \newlength{\exleftskip}
 \newlength{\exadded}
 \setlength{\exadded}{0pt}
-\newcommand{\customexindent}[1]{\setlength{\exadded}{#1}}
+\newcommand{\exaddedindent}[1]{\setlength{\exadded}{#1}}
+\newcommand{\customexindent}[1]{\exaddedindent{#1}} %for backwards compatibility
 
 \newlength{\outlineindent}%indent for each level
 \setlength{\outlineindent}{1.75\fontdimen6\font}%each indent will be 1.75x the size of the normal font size
+
 \newlength{\standardoutlineskip}%vertical spacing for each item
 \setlength{\standardoutlineskip}{\fontdimen6\font plus.22\fontdimen6\font minus.04\fontdimen6\font}
 \newlength{\outlineskip}%vertical spacing for each item
 \setlength{\outlineskip}{\standardoutlineskip}
-\newcommand{\outlineskipfactor}[1]{\setlength{\outlineskip}{#1\standardoutlineskip}}
-
-\newcommand{\toofull}[1][-10em]{\hspace*{#1}}
+\newcommand{\bulletspacingfactor}[1]{\setlength{\outlineskip}{#1\standardoutlineskip}}
 
 \newcommand{\outlinespacingstuff}{%
 \ifnum\value{prevoutlinedepth}=0
-	\par
+	\vskip0pt\par
 \else
 	\ifnum\value{thisoutlinedepth}<\value{prevoutlinedepth}%
 		\vskip\outlineskip\par%`
@@ -125,10 +182,15 @@
 %%%%%%%%%%%%%%%
 %add the indentation to outline item (and example indentation, if applicable)
 %%%%%%%%%%%%%%%
+\newcommand{\leftskipfactornum}{1}
+\newcommand{\bulletindentfactor}[1]{\renewcommand{\leftskipfactornum}{#1}}
+\newlength{\templeftskip}
+
 \newcommand{\ontheleft}[1]{
-	\setlength{\leftskip}{#1}
+	\setlength{\templeftskip}{#1}
+	\setlength{\leftskip}{\leftskipfactornum\templeftskip}
 	\if@allbullets
-		\addtolength{\leftskip}{3ex}
+		\addtolength{\leftskip}{1\myex}
 	\fi
 	\setlength{\exleftskip}{\leftskip}
 	\addtolength{\exleftskip}{\exadded}
@@ -139,16 +201,23 @@
 %%%%%%%%%%%%%%%
 %defining fontsize commands in a way that the size is variable if desired, constant if not
 %%%%%%%%%%%%%%%
-\newcommand{\firstfontsize}{}
-\newcommand{\secondfontsize}{}
-\newcommand{\thirdfontsize}{}
-\newcommand{\fourthfontsize}{}
+\newcommand{\outlinefontsize}[1]{
 \if@varFontSizes
-	\renewcommand{\firstfontsize}{\normalsize}
-	\renewcommand{\secondfontsize}{\small}
-	\renewcommand{\thirdfontsize}{\footnotesize}
-	\renewcommand{\fourthfontsize}{\scriptsize}
+	\ifnum#1>8
+		\scriptsize
+		\else
+		\ifnum#1>6
+			\footnotesize
+			\else
+			\ifnum#1>3
+				\small
+				\else
+				\normalsize
+			\fi
+		\fi
+	\fi
 \fi
+}
 
 
 
@@ -176,14 +245,79 @@
 	\DeclareMathSymbol{\thisdrsh}                  {3}{thismathb}{"EB}
 	\DeclareMathSymbol{\thisvarstar}       {2}{thismatha}{"0F}
 	\DeclareMathSymbol{\thisblackdiamond}  {2}{thismathb}{"0C}
-\newcommand{\drarrow}{\raisebox{.8ex}{\ensuremath{\thisdrsh}}}
+\newcommand{\drarrow}{\raisebox{1\myex}{\ensuremath{\thisdrsh}}}
 \newcommand{\pointright}{{\fontfamily{pzd}\fontencoding{U}\fontseries{m}\fontshape{n}\large\selectfont\char43}}
+\newcounter{dingvariable}
+\NewDocumentCommand\circleNum{s m}{%
+\setcounter{dingvariable}{#2}%
+\IfBooleanTF{#1}{\addtocounter{dingvariable}{201}}{\addtocounter{dingvariable}{191}}%
+{\fontfamily{pzd}\fontencoding{U}\fontseries{m}\fontshape{n}\large\selectfont\char\value{dingvariable}}%
+}
+\NewDocumentCommand\cnbullet{s m}{%
+\setcounter{dingvariable}{#2}%
+\IfBooleanTF{#1}{\addtocounter{dingvariable}{201}}{\addtocounter{dingvariable}{191}}%
+{\fontfamily{pzd}\fontencoding{U}\fontseries{m}\fontshape{n}\large\selectfont\raisebox{.5\myex}{\char\value{dingvariable}}}%
+}
 
+
+%%%%%%%%%%%%%%%
+%define pausing commands, for when beamer and the relevant option are loaded
+%%%%%%%%%%%%%%%
+\newcommand{\@pausecommand}{}
+\@ifclassloaded{beamer}{\renewcommand{\@pausecommand}{\pause}}{}
+\newcommand{%
+	\@maybepausing%
+	}{%
+	\if@beamerpauses%
+		\if@beamerpauseatstart%
+			\@pausecommand%
+		\else%
+			\ifnum\value{prevoutlinedepth}>0%
+				\@pausecommand%
+			\else
+			\fi%
+		\fi%
+	\fi%
+}
 
 
 %%%%%%%%%%%%%%%
 %define bullets for outline items
 %%%%%%%%%%%%%%%
+\newcounter{bulletnumber}
+\newcommand{\@bulletinserter}[1][\value{thisoutlinedepth}]{
+\setcounter{bulletnumber}{#1}\if@allbullets\else\if@allbulletsbeamer\else\addtocounter{bulletnumber}{-1}\fi\fi
+\ifnum\value{bulletnumber}=1\thefirstbullet
+	\else
+\ifnum\value{bulletnumber}=2\thesecondbullet
+	\else
+\ifnum\value{bulletnumber}=3\thethirdbullet
+	\else
+\ifnum\value{bulletnumber}=4\thefourthbullet
+	\else
+\ifnum\value{bulletnumber}=5\thefifthbullet
+	\else
+\ifnum\value{bulletnumber}=6\thesixthbullet
+	\else
+\ifnum\value{bulletnumber}=7\theseventhbullet
+	\else
+\ifnum\value{bulletnumber}=8\theeighthbullet
+	\else
+\ifnum\value{bulletnumber}=9\theninthbullet
+%	\else
+%\ifnum\value{bulletnumber}=10\thetenthbullet
+%\fi
+\fi
+\fi
+\fi
+\fi
+\fi
+\fi
+\fi
+\fi
+\fi
+}
+%
 \newcommand{\thefirstbullet}{\ensuremath{\thisblackdiamond}}
 \newcommand{\thesecondbullet}{\ensuremath{\thissmblacktriangleright}}
 \newcommand{\thethirdbullet}{\ensuremath{\thissqbullet}}
@@ -192,62 +326,129 @@
 \newcommand{\thesixthbullet}{\ensuremath{\thissmsquare}}
 \newcommand{\theseventhbullet}{\ensuremath{\thisvarstar}}
 \newcommand{\theeighthbullet}{\ensuremath{\circ}}
-%\newcommand{\theninthbullet}{}
+\newcommand{\theninthbullet}{\ensuremath{\bullet}}
 %\newcommand{\thetenthbullet}{}
-%
-%The commands below are used only within this .sty file. Do not change these unless you know what you are doing.
-\newcommand{\@bulletlevelone}{}
-\newcommand{\@bulletleveltwo}{\thefirstbullet}
-\newcommand{\@bulletlevelthree}{\thesecondbullet}
-\newcommand{\@bulletlevelfour}{\thethirdbullet}
-\newcommand{\@bulletlevelfive}{\thefourthbullet}
-\newcommand{\@bulletlevelsix}{\thefifthbullet}
-\newcommand{\@bulletlevelseven}{\thesixthbullet}
-\newcommand{\@bulletleveleight}{\theseventhbullet}
-%\newcommand{\@bulletlevelnine}{\theninthbullet}
-%\newcommand{\@bulletlevelten}{\thetenthbullet}
-\if@allbullets
-	\renewcommand{\@bulletlevelone}{\thefirstbullet}
-	\renewcommand{\@bulletleveltwo}{\thesecondbullet}
-	\renewcommand{\@bulletlevelthree}{\thethirdbullet}
-	\renewcommand{\@bulletlevelfour}{\thefourthbullet}
-	\renewcommand{\@bulletlevelfive}{\thefifthbullet}
-	\renewcommand{\@bulletlevelsix}{\thesixthbullet}
-	\renewcommand{\@bulletlevelseven}{\theseventhbullet}
-	\renewcommand{\@bulletleveleight}{\theeighthbullet}
-%	\renewcommand{\@bulletlevelnine}{\theninthbullet}
-%	\renewcommand{\@bulletlevelten}{\thetenthbullet}
-\fi
+
 
 
 
 %%%%%%%%%%%%%%%
-%define commands \1...\8 for actual outline items
+%define shortcut commands \0...\9
 %%%%%%%%%%%%%%%
-\newcommand{\1}[1][\@bulletlevelone]{\outlinedepth{1}\outlinespacingstuff\ontheleft{0em}\exampleoffset\firstfontsize\noindent\hskip-4ex\parbox{4ex}{\raggedleft\normalsize#1~~~}}
+\providecommand{\0}[1][\@bulletinserter]{\OutlineMaybePause[#1]{0}}
+\providecommand{\1}[1][\@bulletinserter]{\OutlineMaybePause[#1]{1}}
+\providecommand{\2}[1][\@bulletinserter]{\OutlineMaybePause[#1]{2}}
+\providecommand{\3}[1][\@bulletinserter]{\OutlineMaybePause[#1]{3}}
+\providecommand{\4}[1][\@bulletinserter]{\OutlineMaybePause[#1]{4}}
+\providecommand{\5}[1][\@bulletinserter]{\OutlineMaybePause[#1]{5}}
+\providecommand{\6}[1][\@bulletinserter]{\OutlineMaybePause[#1]{6}}
+\providecommand{\7}[1][\@bulletinserter]{\OutlineMaybePause[#1]{7}}
+\providecommand{\8}[1][\@bulletinserter]{\OutlineMaybePause[#1]{8}}
+\providecommand{\9}[1][\@bulletinserter]{\OutlineMaybePause[#1]{9}}
 
-\newcommand{\2}[1][\@bulletleveltwo]{\outlinedepth{2}\outlinespacingstuff\ontheleft{1.25\outlineindent}\exampleoffset\noindent\firstfontsize{\hskip-4ex\parbox{4ex}{\raggedleft{#1}~~~}}}
 
-\newcommand{\3}[1][\@bulletlevelthree]{\outlinedepth{3}\outlinespacingstuff\ontheleft{2\outlineindent}\exampleoffset\noindent\firstfontsize\hskip-4ex\parbox{4ex}{\raggedleft\normalsize#1~~~}}
+%%%%%%%%%%%%%%%
+%define acutal outline item commands
+%%%%%%%%%%%%%%%
+\newcounter{tempoutlinecount}
+\newlength{\tempoutlinelength}
 
-\newcommand{\4}[1][\@bulletlevelfour]{\outlinedepth{4}\outlinespacingstuff\ontheleft{3\outlineindent}\exampleoffset\noindent\secondfontsize\hskip-4ex\parbox{4ex}{\raggedleft\normalsize#1~~~}}
+\newcommand{\Outline}[2][\@bulletinserter]{\outlinedepth{#2}\@commonOutlineStuff{#1}{#2}\ignorespaces}
+\newcommand{\OutlineMaybePause}[2][\@bulletinserter]{\outlinedepth{#2}\@maybepausing\@commonOutlineStuff{#1}{#2}\ignorespaces}
+\newcommand{\OutlinePause}[2][\@bulletinserter]{\outlinedepth{#2}\@pausecommand\@commonOutlineStuff{#1}{#2}\ignorespaces}
 
-\newcommand{\5}[1][\@bulletlevelfive]{\outlinedepth{5}\outlinespacingstuff\ontheleft{4\outlineindent}\exampleoffset\noindent\secondfontsize\hskip-4ex\parbox{4ex}{\raggedleft\normalsize#1~~~}}
+\newcommand{\@commonOutlineStuff}[2]{%
+\outlinespacingstuff%
+\setcounter{tempoutlinecount}{#2}\addtocounter{tempoutlinecount}{-1}%
+\setlength{\tempoutlinelength}{\value{tempoutlinecount}\outlineindent}%
+\ontheleft{\tempoutlinelength}\exampleoffset\outlinefontsize{#2}%
+\noindent\hskip-2\myex\parbox{2\myex}{\raggedleft\normalsize#1\hspace*{.5\myex}}%
+}
 
-\newcommand{\6}[1][\@bulletlevelsix]{\outlinedepth{6}\outlinespacingstuff\ontheleft{5\outlineindent}\exampleoffset\noindent\secondfontsize\hskip-4ex\parbox{4ex}{\raggedleft\normalsize#1~~~}}
 
-\newcommand{\7}[1][\@bulletlevelseven]{\outlinedepth{7}\outlinespacingstuff\ontheleft{6\outlineindent}\exampleoffset\noindent\thirdfontsize\hskip-4ex\parbox{4ex}{\raggedleft\normalsize#1~~~}}
-
-\newcommand{\8}[1][\@bulletleveleight]{\outlinedepth{8}\outlinespacingstuff\ontheleft{7\outlineindent}\exampleoffset\noindent\thirdfontsize\hskip-4ex\parbox{4ex}{\raggedleft\normalsize#1~~~}}
 
 
 
 %%%%%%%%%%%%%%%
 %define \startoutline and \stopoutline commands, for spacing prettiness
 %%%%%%%%%%%%%%%
-\newcommand{\startoutline}[1][\@bulletlevelone]{\exampleoffset\par\ontheleft{0em}\normalsize\noindent\vskip0ex}
+\newcommand{\startoutline}{\exampleoffset\par\vskip0pt\setlength{\leftskip}{0pt}\normalsize\noindent\setcounter{thisoutlinedepth}{0}\setcounter{prevoutlinedepth}{0}}
 
-\newcommand{\stopoutline}[1][\exadded]{\par\ontheleft{0em}\exampleoffset[#1]\vskip0ex}
+\newcommand{\stopoutline}[1][\exadded]{\exampleoffset[#1]\par\vskip0pt\setlength{\leftskip}{0pt}\normalsize\noindent\setcounter{thisoutlinedepth}{0}\setcounter{prevoutlinedepth}{0}}
+%
+%
+%%%%%%%%%%%%%%%%
+%%define \CenterBox
+%%%%%%%%%%%%%%%%
+%
+%\NewDocumentCommand\CenterBox{s O{white} O{1pt} m m}{%
+%\stopoutline
+%\begin{center}
+%\fboxrule#3
+%	\vspace*{.5\outlineskip}
+%	{\fcolorbox{black}{#2}{
+%	\begin{minipage}{.65\linewidth}
+%	{
+%	\vspace*{.5\myex}
+%	\IfBooleanTF{#1}{}{\textbf{\textsc{#4}}\\[-.5\baselineskip]
+%	\hrule\vspace*{.5\baselineskip}}
+%	#5\vspace*{1\myex}
+%	}
+%	\fboxrule8pt
+%	\end{minipage}
+%	}}%\vspace*{.5\outlineskip}
+%\end{center}
+%}
+\newsavebox{\myCbox}
+\NewDocumentEnvironment{CenterBox}{s O{white} O{1pt} m}{%
+\stopoutline
+\begin{center}
+\fboxrule#3
+	\begin{lrbox}{\myCbox}
+	\begin{minipage}{.75\linewidth}
+	\vspace*{.5\myex}
+	\IfBooleanTF{#1}%
+		{}
+		{\textbf{\textsc{#4}}\\[-.5\baselineskip]\hrule\vspace*{.5\baselineskip}}
+		
+}
+{\vspace*{1\myex}\end{minipage}\end{lrbox}\fcolorbox{black}{#2}{\usebox{\myCbox}}\fboxrule8pt\end{center}}
+%
+%
+\@ifclassloaded{beamer}{
+\RenewDocumentEnvironment{CenterBox}{s O{bg} O{1pt} m}{%
+\stopoutline
+\vspace*{-.5\outlineskip}
+\colorlet{CustomBeamerColorX}{#2}
+	\pause
+	\begingroup
+	\setbeamercolor{block title}{fg=black,bg=CustomBeamerColorX!85!black}
+	\setbeamercolor{block body}{fg=black,bg=CustomBeamerColorX}
+	\IfBooleanTF{#1}%
+		{\begin{block}}%
+		{\begin{block}{\large\scshape\bfseries#4}}%
+}%
+{\end{block}\vspace*{-\outlineskip}\endgroup\startoutline}
 
+}{}
+
+\newsavebox{\myBbox}
+\NewDocumentEnvironment{BigBox}{s O{white} O{1pt} m}{%
+\fboxrule#3
+	\begin{lrbox}{\myCbox}
+	~~\begin{minipage}{.85\linewidth}
+	\vspace*{.5\myex}
+	\textbf{\textsc{#4}}\\[-.5\baselineskip]
+	\hrule
+}
+{\vspace*{1\myex}\end{minipage}~~\end{lrbox}\fcolorbox{black}{#2}{\usebox{\myCbox}}\fboxrule8pt
+\par\noindent
+}
+
+\newenvironment{frameoutline}[1][c]{%
+	\begin{frame}[#1]%
+	\ZeroOutLeft\ignorespaces%
+	}
+	{\stopoutline\end{frame}}
 
 %end of package
