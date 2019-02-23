@@ -1,11 +1,22 @@
 % MarginOutline documentation
 % created by Byron Ahn
 % email address: switch the words before and after the period in ahn.byron@gmail.com
-% 2014.04.07
+% 2018.02.07
 \documentclass[11pt]{article}
 \usepackage[varvertical,constantsize,allbullets]{MarginOutline}
 \usepackage[margin=1.25in]{geometry}
 \usepackage[bottom]{footmisc}
+%\usepackage{fancyvrb}
+%	\fvset{%
+%	fontsize=\footnotesize,
+%	numbers=left
+%	}
+\usepackage{minted}
+	\fvset{%
+	fontsize=\footnotesize,
+	numbers=left,
+	breaklines=true
+	}
 \usepackage{expex}
 \usepackage{graphicx}
 \usepackage{color}
@@ -14,9 +25,9 @@
 \frenchspacing
 
 \begin{document}           
-\title{Documentation for MarginOutline.sty ver. 1.3}
+\title{Documentation for MarginOutline.sty ver. 1.4.1}
 \author{Byron Ahn\footnotemark}
-\date{October 2017}
+\date{February 2019}
 \maketitle
 \footnotetext{To get my email address, switch the words before and after the period in ahn.byron@gmail.com.} 
 
@@ -30,7 +41,7 @@
 	\2 Such outlines are limited in the depth of nesting, and there are potentially undesirable interactions with other packages (e.g. numbered-example packages such as \verb+linguex+ and \verb+expex+)
 	\2 Also, such outlines require constant beginning or ending of itemize/enumerate/outline environments
 		\3 This makes it clunky to skip around in adding/removing levels of indentation
-		\3 It also makes it clunky to employ in beamer presentations
+		\3 It also makes it clunky to employ in \texttt{beamer} presentations
 
 \1 This package defines outlining commands that are not subject to these restrictions.
 
@@ -41,10 +52,10 @@
 	\2[--]{\color{blue}\verb+constantexindent+}:	forces all linguex/expex numbered-examples to be uniformly indented
 	\2[--]{\color{blue}\verb+allbullets+}:	even outline items at a depth of 1 have bullets (by default, only outline items at a depth of 2 or deeper have bullets)
 	\2[--]{\color{blue}\verb+varvertical+}:	items have a variable vertical spacing (when two items of the same depth occur in a row, the spacing is made smaller)
-	\2[--]{\color{blue}\verb+beamerpause+}:	when in the beamer class is loaded and this option is invoked, pauses are inserted between items.
-	\2[--]{\color{blue}\verb+beamerpauseatstart+}:	when in the beamer class is loaded and this option is invoked, pauses are inserted before (and not just in between) all items.
+	\2[--]{\color{blue}\verb+beamerpause+}:	when in the \texttt{beamer} class is loaded and this option is invoked, pauses are inserted before each item, \textbf{except} not before the first item on a slide.
+	\2[--]{\color{blue}\verb+beamerpauseatstart+}:	when in the \texttt{beamer} class is loaded and this option is invoked, pauses are inserted before each item, \textbf{including} before the first item on a slide.
 
-\1 There are several commands provided as well; the most useful are described below
+\0 There are several commands provided as well; the most useful are described below
 \1 Outlining basics (section \ref{sec: basics}):
 	\2 {\color{blue}\verb+\startoutline+}
 		\3 Sets some spacing variables appropriately. (This is \textit{always optional}, and you do not need it to start an outline)
@@ -59,15 +70,23 @@
 		\3 When the optional symbol argument is present, the symbol used for that bullet item is the one given as the argument
 
 	\2 {\color{blue}\verb+\OutlinePause[<symbol>]{<num>}+}
-		\3 Same as \verb+\Outline+, except a pause is added between items in beamer presentations.
+		\3 Same as \verb+\Outline+, except a pause is added between items in \texttt{beamer} documents.
+		\3 (More on pausing in section \ref{sec:pausing})
 
 	\2 {\color{blue}\verb+\OutlineMaybePause[<symbol>]{<num>}+}
-		\3 Same as \verb+\OutlinePause+, except a pause is added between items if and only if (i) the document is a beamer presentation and (ii) \verb+MarginOutline+ is loaded with the \verb+beamerpause+ option.
+		\3 Same as \verb+\OutlinePause+, except a pause is added between items if and only if (i) the document is a \texttt{beamer} presentation and (ii) \verb+MarginOutline+ is loaded with the \verb+beamerpause+ option.
+		\3 (More on pausing in section \ref{sec:pausing})
 
 	\2 {\color{blue}\verb+\0[<symbol>]+}, {\color{blue}\verb+\1[<symbol>]+}, {\color{blue}\verb+\2[<symbol>]+}, {\color{blue}\verb+\3[<symbol>]+}, {\color{blue}\verb+\4[<symbol>]+},\newline {\color{blue}\verb+\5[<symbol>]+}, {\color{blue}\verb+\6[<symbol>]+}, {\color{blue}\verb+\7[<symbol>]+}, {\color{blue}\verb+\8[<symbol>]+}, {\color{blue}\verb+\9[<symbol>]+}
+		\3 \verb+\1+ is equivalent to \verb+\OutlineMaybePause{1}+, \verb+\2+ is equivalent to \verb+\OutlineMaybePause{2}+, etc.
 		\3 These are shortcut commands, which \verb+MarginOutline+ attempts to define
 			\4 However, if any of them is already defined when \verb+MarginOutline+ is loaded, \verb+MarginOutline+ will not override them.
-		\3 \verb+\1+ is equivalent to \verb+\OutlineMaybePause{1}+, \verb+\2+ is equivalent to \verb+\OutlineMaybePause{2}+, etc.
+
+
+\1 Adjusting pausing behavior in \texttt{beamer} documents (section \ref{sec:pausing})
+	\2 {\color{blue}\verb+\turnOnPauses+} and {\color{blue}\verb+\turnOffPauses+}
+		\3 These commands have local scope and affect whether commands like \verb+\OutlineMaybePause+ or \verb+\1+ introduce pauses before them
+		\3 ({\itshape{Also provided as equivalents: \color{blue}\verb+\turnPausesOn+} and {\color{blue}\verb+\turnPausesOff+}})
 
 \1 Bullet symbols (section \ref{sec: bullets}):
 		
@@ -93,17 +112,13 @@
 		\3 Changes how much numbered examples are indented from the (relevant) left margin. Give it a length value, e.g. \verb+12pt+, to make an indent of 12pt.
 
 \1 Finally, the package defines two new environments
-	\2 {\color{blue}\verb+\begin{CenterBox}[<color>][<width>]{<header>}+\\\verb+<body>+\\\verb+\end{CenterBox}+}
+	\2 {\color{blue}\verb+\begin{CenterBox}(*)[<color>][<box width>][<outline thickness>]{<header>}+\\\verb+<body>+\\\verb+\end{CenterBox}+}
 		\3 Creates a centered, framed box that is centered in the middle of your outline. (See section \ref{sec: centerbox}.)
-
-	\2 {\color{blue}\verb+\begin{frameoutline}[<optional paramters>]+\\\verb+\end{frameoutline}+}
-		\3 Mimics a beamer frame, with some added formatting tools to make these outline commands work better. (See section \ref{sec:frameoutline}.) The optional parameters are the same as those provided to the \verb+frame+ environment, as defined by beamer.
-		\3 NOTE: \textit{This only works when used in a beamer document}
 	
 
 \section{Outline Basics}\label{sec: basics}
 \1 Unlike environments, where \verb+\begin{}+/\verb+\end{}+ commands are required, there is no requirement here.
-	\2 This structuring was motivated for making the creation of beamer slides easier
+	\2 This structuring was motivated for making the creation of \texttt{beamer} slides easier
 		\3 In other outline packages, \verb+\begin+/\verb+\end+ commands are required in every frame that has an outline; this can be cumbersome. 
 	\2 The \verb+\startoutline+/\verb+\stopoutline+ commands may be used to begin/end the outline
 		\3 Their use is recommended, to ensure proper spacing adjustments take place.
@@ -126,6 +141,7 @@
 	\2 The header will also be aligned with the page's left margin.  (This is achieved through the \verb+titlesec+ package.)
 
 \newpage
+
 \section{Bulleting Symbols}\label{sec: bullets}
 \1 The symbols used for bulleting can be redefined easily.
 	\2 Currently, the bullet commands are defined as the following:\\
@@ -178,38 +194,110 @@
 			\4 e.g., {\verb+\exgotodepth{2}+} will make it so that the example is left-aligned with the text of \verb+\Outline{2}+ (whether you use \verb+constantexindent+ or not)
 			\4 (If \verb+\exaddedindent{<length>}+ has been used previously, the \verb+<length>+ will still be added)
 
-\section{A Note for Use with Beamer}\label{sec:frameoutline}
-\1 \verb+\OutlineMaybePause+ and its derivatives (\verb+\1+, \verb+\2+, \verb+\3+, ...) rely on counters that check what the last outline command was
-	\2 If \verb+MarginOutline+ detects that this is the first outline command...
-		\3 ...and the \verb+beamerpause+ option is loaded, but \verb+beamerpauseatstart+ is not, no pause will be inserted
-		\3 ...and the \verb+beamerpauseatstart+ option is loaded, a pause will be inserted
-\1 You may want \verb+MarginOutline+ to treat some outline commands as `the first outline command' for purposes of pause-insertion
-	\2 For example, you may want the first outline command on each slide to be treated this way
-	\2 To do this, you can insert a \verb+\ZeroOutLeft+ command at the beginning of each slide
-		\3 Alternatively, you can define your own environment for slides, which executes \verb+\ZeroOutLeft+ every time
-		\3 Such an environment -- \verb+frameoutline+ -- is provided by this package
+\section{Pausing with \texttt{beamer}}\label{sec:pausing}
+\1 Bullet items introduced with \verb+\OutlinePause+ will have a pause inserted before them
+	\2 ({\itshape An exception is when \verb+\turnOffPauses+ is used; see below})
+\1 \verb+\OutlineMaybePause+ and its derivatives (\verb+\0+--\verb+\9+) can \textbf{\textit{only}} yield a pause in beamer slides \textbf{\textit{if}} the package is loaded with the \verb+beamerpause+ or \verb+beamerpauseatstart+ option 
+	\2 These options provide for document-level control over whether these commands introduce pauses before the bullet item
+	\2 When \verb+beamerpauseatstart+ is invoked, all bullet points introduced by \verb+\OutlineMaybePause+ or \verb+\0+--\verb+\9+ will be preceded by a pause
+		\3 (i.e., Slides appear without the first such bullet point visible)
+	\2 \verb+beamerpause+ is similar, except that a pause is \textbf{\textit{not}} introduced by \verb+\OutlineMaybePause+ or \verb+\0+--\verb+\9+ if it is the first bullet point on a slide
+		\3 (i.e., Slides appear with the first such bullet point visible)
 
+\1 In addition to these package options, \verb+MarginOutline+ also provides commands to manipulate, mid-document, whether pauses are inserted for outline commands: \verb+\turnOnPauses+ and \verb+\turnOffPauses+
+	\2 These two commands affect whether pauses are inserted for the following commands: \verb+\OutlinePause+, \verb+\OutlineMaybePause+, \verb+\0+--\verb+\9+
+	\2 \verb+\turnOnPauses+ and \verb+\turnOffPauses+ have an impact on outline commands that come after it
+		\3 They have no effect on outline commands that precede them
+	\2 Moreover, these commands are locally bounded, meaning they do not extend beyond environments that contain them
+		\3 Consider the following beamer document, which produces 19 frames, as the option \verb+beamerpauseatstart+ is invoked and causes a pause before each bullet command:
+		\begin{center}
+		\fbox{
+		\begin{minipage}{.7\linewidth}\footnotesize
+			\VerbatimInput{beamerslideexample-2.tex}	
+		\end{minipage}
+		}
+		\end{center}
+		\3 If \verb+\turnOffPauses+ were inserted between lines 11 and 12, Bullets 4-8 would all load at once
+			\4 (The pauses inced by Bullets 5-8 would be suppressed)
+			\4 \textbf{Note}: Because \verb+\turnOffPauses+ is locally bounded, its effects do \textit{not} extend into Slide 2 (its effects are limited to the \verb+frame+ environment that contains it)
+		\3 On the other hand, if \verb+\turnOffPauses+ were inserted on line 17, Slides 2 and 3 would not contain any pauses
+			\4 This example of \verb+\turnOffPauses+ is not bounded by any local environment, and therefore its effects are exerted over the remainder of the document
+		\3 \verb+\turnOffPauses+ and \verb+\turnOnPauses+ interact predictably
+			\4 For example, if \verb+\turnOffPauses+ were inserted on line 17 and \verb+\turnOffPauses+ were on line 23, only Slide 2 would be without pauses
+			\4 Or, if \verb+\turnOffPauses+ were inserted on line 17 and \verb+\turnOffPauses+ were between lines 26 and 27, outline commands would not insert pauses for Bullets 8--13, but would for bullets 14--16
+
+\section{A Note on Beamer and Section Slides}\label{sec:Slide}
+\1 If you use change what happens at the beginning of sections in \verb+beamer+, beware of possible interactions \verb+MarginOutline+
+	\2 \verb+MarginOutline+ executes the following:
+		\begin{center}
+		\begin{minipage}{.7\linewidth}
+		\begin{verbatim}
+\AtBeginSection{\ZeroOutLeft}
+\AtBeginSubsection{\ZeroOutLeft}
+\AtBeginSubsubsection{\ZeroOutLeft}	
+		\end{verbatim}
+		\end{minipage}
+		\end{center}
+	\2 These \verb+\ZeroOutLeft+ commands ensure proper formatting
+		\3 If you make adjustments to what happens at the beginning of sections, you are encouraged to also include \verb+\ZeroOutLeft+
+
+%\1 Occasionally, \verb+MarginOutline+ interacts with other \verb+beamer+ commands in unexpected ways
+%	\2 (In particular, title slides and section slides)
+%	\2 One way to deal with this is to insert \verb+\startoutline+ command at the beginning of each slide, and a \verb+\stopoutline+ and the end of each slide
+%\1 \verb+\MarginOutline+ provides a new environment for slides, which does this for you
+%	\2 The \verb+Slide+ environment works like a \verb+frame+ environments, in terms of its arguments
+%	\2 That is, the following two environments are largely equivalent, except the latter adds the \verb+MarginOutline+-specific commands for preventing certain formatting-related issues
+%		\3[]\begin{minipage}{.33\linewidth}
+%	\begin{verbatim}
+%\begin{frame}[b]{Test}
+%\1 This is a test
+%\end{frame}
+%	\end{verbatim}	
+%\end{minipage}
+%~~~~\begin{minipage}{.33\linewidth}
+%	\begin{verbatim}
+%\begin{Slide}[b]{Test}
+%\1 This is a test
+%\end{Slide}
+%	\end{verbatim}	
+%\end{minipage}
 			
 \section{An Extra Presentation Tool}\label{sec: centerbox}
 \1 With the \verb+CenterBox+ environment, you can make boxes that stand out from the rest of your outline
 	\2 This is environment takes two optional arguments, and one mandatory argument
-\1 To begin a \verb+CenterBox+ environment, use the command:\\\verb+\begin{CenterBox}[<color>][<width>]{<header>}+
+\1 To begin a \verb+CenterBox+ environment, use the command:\\\verb+\begin{CenterBox}[<color>][<box width>][<outline thickness>]{<header>}+
 	\2 The optional \texttt{color} argument specifies a background color. The default is white.
 		\3 (In the case of beamer slides, the default is the background color of your slide.)
-	\2 The optional \texttt{width} argument it specifies the width of the border around the box. The default value is 1pt.
+	\2 The optional \texttt{box width} argument it specifies the width of the box. The default value is 75\% of the line's width.
+		\3 (This argument has no effect in beamer, as beamer \verb+\CenterBox+s are formatted according to the beamertheme.)
+	\2 The optional \texttt{outline thickness} argument it specifies the width of the border around the box. The default value is 1pt.
 		\3 (This argument has no effect in beamer, as beamer \verb+\CenterBox+s are formatted according to the beamertheme.)
 	\2 The \texttt{header} argument puts a header at the top of the \verb+\CenterBox+.
 \1 No matter how deeply embedded you are into your outline:
-	\2 The CenterBox always appears in the center of the page, at a width of 75\% of the line width
+	\2 The CenterBox always appears in the center of the page
 		\3 This is exemplified below:
-		\begin{CenterBox}[green!25][3pt]{CenterBox Demo}
+		\begin{CenterBox}{CenterBox Demo}
 			CenterBox works like this			
 		\end{CenterBox}
 		
-			\4 This was produced with the code:\\\begin{minipage}{.5\linewidth}
+			\4 This was produced with the code:
+				\5[]\begin{minipage}{.5\linewidth}
 			\begin{verbatim}
-\begin{CenterBox}[green!25][3pt]{CenterBox Demo}
+\begin{CenterBox}{CenterBox Demo}
 CenterBox works like this			
+\end{CenterBox}
+			\end{verbatim}	
+\end{minipage}
+
+	\2 The \verb+CenterBox+ below was created using the optional arguments
+\begin{CenterBox}[red!10][.65\linewidth][2pt]{CenterBox Demo}
+This CenterBox has made use of optional arguments
+\end{CenterBox}
+			\4 This was produced with the code:
+				\5[]\begin{minipage}{.5\linewidth}
+			\begin{verbatim}
+\begin{CenterBox}[red!10][.65\linewidth][2pt]{CenterBox Demo}
+This CenterBox has made use of optional arguments
 \end{CenterBox}
 			\end{verbatim}	
 \end{minipage}
@@ -222,37 +310,21 @@ CenterBox works like this
 		
 		\3 The full .tex for this beamer document above:
 		\begin{center}
+		\fbox{
 		\begin{minipage}{.7\linewidth}\footnotesize
-			\begin{verbatim}
-\documentclass[handout]{beamer}
-\usetheme{Madrid}
-\usepackage[allbullets]{MarginOutline}
-
-\begin{document}           
-
-\begin{frame}{A Beamer Example}
-\1 This is a beamer slide
-	\2 It has a CenterBox on it
-\begin{CenterBox}[green!25][3pt]{CenterBox Demo}
-CenterBox works like this			
-\end{CenterBox}
-\1 The exact formatting depends on how the beamer theme you choose
-formats the block environment
-\end{frame}
-			
-\end{document}
-			\end{verbatim}
+			\VerbatimInput{beamerslideexample.tex}	
 		\end{minipage}
+		}
 		\end{center}
 
 \1 In addition, if you add a * after \verb+\begin{CenterBox}+, the header will be suppressed:
 	\2 Here is an example:
-		\begin{CenterBox}*[green!25][3pt]{CenterBox Demo}
-			CenterBox works like this			
+		\begin{CenterBox}*[yellow][.65\linewidth][.5pt]{CenterBox Demo}
+			A CenterBox with no header works like this			
 		\end{CenterBox}
 			\2 This was produced with the code:\\\begin{minipage}{.5\linewidth}
 			\begin{verbatim}
-\begin{CenterBox}*[green!25][3pt]{CenterBox Demo}
+\begin{CenterBox}*[yellow][.65\linewidth][.5pt]{CenterBox Demo}
 CenterBox works like this			
 \end{CenterBox}
 			\end{verbatim}
@@ -260,7 +332,9 @@ CenterBox works like this
 		\3 \textbf{NOTE}: Even though the header is suppressed in the output, you \textit{must} include the header argument (if only as curly braces without any content: i.e. \{\})
 			\4 If you do not, you may get some errors
 
-
+\1 Lastly, similar to \verb+CenterBox+ environments, there is the nearly identical \verb+BigBox+ environment
+	\2 It makes use of all the same optional and mandatory arguments
+	\2 The only difference is that, by default, the width of the box is almost an entire line's width (90\%)
 
 
 \end{document}

@@ -1,14 +1,16 @@
-% MarginOutline.sty, v1.3
+% MarginOutline.sty, v1.4.1
 % created by Byron Ahn
 % email address: switch the words before and after the period in ahn.byron@gmail.com
-% 2017.10.07
+% 2019.02.07
 %
-%There are four options for this package:
+%There are five options for this package:
 %	- constantsize:	forces constant font size
 %	- zeroexindent:	forces all linguex/expex examples to be uniformly indented
 %	- allbullets:	every item has a bullet point (even \1s)
 %	- varvertical:	items have a variable vertical spacing (when two items of the same or greater depth occur in a row, the spacing is made smaller)
-%	- beamerpause:	when in the beamer class is loaded and this option is invoked, pauses are inserted between items.
+%	- beamerpause:	when in the beamer class is loaded and this option is invoked, pauses are inserted before each item, pauses are inserted before each item *except* for the first item in a frame environment.
+%	- beamerpauseatstart:	when in the beamer class is loaded and this option is invoked, pauses are inserted before each item *including* the first item in a frame environment.
+
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{MarginOutline}
 
@@ -106,19 +108,19 @@
 \AtBeginDocument{%
 \@ifpackageloaded{expex}{\@expexloadedtrue}{\@expexloadedfalse}
 \@ifpackageloaded{linguex}{\@linguexloadedtrue}{\@linguexloadedfalse}
-\if@anyExIndent
-	\if@expexloaded
+\if@anyExIndent%if we're doing variable indenting, then make the indentation equal to \exleftskip (which corresponds to \leftskip + \exadded; and \leftskip is controlled by level of indentation)
+	\if@expexloaded%if expex is loaded, then...
 		\renewcommand{\exampleoffset}[1][\exleftskip]{\lingset{numoffset=#1}}%
-	\else
-		\if@linguexloaded
+	\else%	if expex isn't loaded, then...
+		\if@linguexloaded%if linguex is loaded, then...
 			\renewcommand{\exampleoffset}[1][\exleftskip]{\setlength{\Exindent}{#1}}
 		\fi
 	\fi
-\else
-	\if@expexloaded
+\else%if we are NOT doing variable indenting, then make the indentation equal to \exadded (ignoring \leftskip)
+	\if@expexloaded%if expex is loaded, then...
 		\renewcommand{\exampleoffset}[1][\exadded]{\lingset{numoffset=#1}}%
-	\else
-		\if@linguexloaded
+	\else%	if expex isn't loaded, then...
+		\if@linguexloaded%if linguex is loaded, then...
 			\renewcommand{\exampleoffset}[1][\exadded]{\setlength{\Exindent}{#1}}
 		\fi
 	\fi
@@ -142,10 +144,8 @@
 %defining lengths for spacing stuff
 %%%%%%%%%%%%%%%
 \newlength{\myex}
-%\ExplSyntaxOn
-%\setlength{\myex}{{\fp_to_decimal:n {1ex/1pt}}pt}
-\setlength{\myex}{8pt}
-%\ExplSyntaxOff
+\newcommand*\fsize{\dimexpr\f@size pt\relax}
+\setlength{\myex}{.85\fsize}
 \newlength{\exleftskip}
 \newlength{\exadded}
 \setlength{\exadded}{0pt}
@@ -264,20 +264,20 @@
 %%%%%%%%%%%%%%%
 \newcommand{\@pausecommand}{}
 \@ifclassloaded{beamer}{\renewcommand{\@pausecommand}{\pause}}{}
-\newcommand{%
-	\@maybepausing%
-	}{%
-	\if@beamerpauses%
-		\if@beamerpauseatstart%
-			\@pausecommand%
-		\else%
-			\ifnum\value{prevoutlinedepth}>0%
-				\@pausecommand%
-			\else
-			\fi%
-		\fi%
-	\fi%
-}
+\newcommand{\@maybepausing}{\if@beamerpauses{\if@beamerpauseatstart{\@pausecommand}\else{\ifnum\value{prevoutlinedepth}>0{\@pausecommand}\else{}\fi}\fi}\fi}
+%\newcommand{\@maybepausing}{\if@beamerpauses{\@pausecommand}\else{}\fi}
+
+% the following takes away pauses that would be inserted by subsequent commands like \1 or \OutlineMaybePause{1}
+% this can be called within a frame, or in between them
+% if used within a frame, it only affects subsequent commands that are also in that frame
+\newcommand{\turnOffPauses}{\renewcommand{\@pausecommand}{}\renewcommand{\@maybepausing}{}}
+\newcommand{\turnPausesOff}{\renewcommand{\@pausecommand}{}}
+
+% the following makes sure subsequent commands like \1 or \OutlineMaybePause{1} insert pauses (in a beamer document)
+% this can be called within a frame, or in between them
+% if used within a frame, it only affects subsequent commands that are also in that frame
+\newcommand{\turnOnPauses}{\renewcommand{\@pausecommand}{\pause}\renewcommand{\@maybepausing}{\@pausecommand}}
+\newcommand{\turnPausesOn}{\renewcommand{\@pausecommand}{\pause}}
 
 
 %%%%%%%%%%%%%%%
@@ -303,6 +303,9 @@
 \ifnum\value{bulletnumber}=8\theeighthbullet
 	\else
 \ifnum\value{bulletnumber}=9\theninthbullet
+%	\else
+%\ifnum\value{bulletnumber}=10\thetenthbullet
+%\fi
 \fi
 \fi
 \fi
@@ -323,6 +326,7 @@
 \newcommand{\theseventhbullet}{\ensuremath{\thisvarstar}}
 \newcommand{\theeighthbullet}{\ensuremath{\circ}}
 \newcommand{\theninthbullet}{\ensuremath{\bullet}}
+%\newcommand{\thetenthbullet}{}
 
 
 
@@ -378,62 +382,79 @@
 %
 %
 \newsavebox{\myCbox}
-\NewDocumentEnvironment{CenterBox}{s O{white} O{1pt} m}{%
+\NewDocumentEnvironment{CenterBox}{s O{white} O{.75\linewidth} O{1pt} m}{%
 \stopoutline
 \begin{center}
-\fboxrule#3
+\fboxrule#4
 	\begin{lrbox}{\myCbox}
-	\begin{minipage}{.75\linewidth}
+	\begin{minipage}{#3}
 	\vspace*{.5\myex}
 	\IfBooleanTF{#1}%
 		{}
-		{\textbf{\textsc{#4}}\\[-.5\baselineskip]\hrule\vspace*{.5\baselineskip}}
+		{\textbf{\textsc{#5}}\\[-.5\baselineskip]\hrule\vspace*{.5\baselineskip}}
 		
 }
 {\vspace*{1\myex}\end{minipage}\end{lrbox}\fcolorbox{black}{#2}{\usebox{\myCbox}}\fboxrule8pt\end{center}}
 %
 %
 \@ifclassloaded{beamer}{
-\RenewDocumentEnvironment{CenterBox}{s O{bg} O{1pt} m}{%
+\RenewDocumentEnvironment{CenterBox}{s O{bg} O{} O{1pt} m}{%
 \stopoutline
 \vspace*{-.5\outlineskip}
 \colorlet{CustomBeamerColorX}{#2}
-	\pause
+	\@maybepausing
 	\begingroup
 	\setbeamercolor{block title}{fg=black,bg=CustomBeamerColorX!85!black}
 	\setbeamercolor{block body}{fg=black,bg=CustomBeamerColorX}
 	\IfBooleanTF{#1}%
 		{\begin{block}}%
-		{\begin{block}{\large\scshape\bfseries#4}}%
+		{\begin{block}{\large\scshape\bfseries#5}}%
+}%
+{\end{block}\vspace*{-\outlineskip}\endgroup\startoutline}
+}{}
+
+\newsavebox{\myBbox}
+\NewDocumentEnvironment{BigBox}{s O{white} O{.9\linewidth} O{1pt} m}{%
+\stopoutline
+\begin{center}
+\fboxrule#4
+	\begin{lrbox}{\myCbox}
+	~~\begin{minipage}{#3}
+	\vspace*{.5\myex}
+	\textbf{\textsc{#5}}\\[-.5\baselineskip]
+	\hrule
+}
+{\vspace*{1\myex}\end{minipage}~~\end{lrbox}\fcolorbox{black}{#2}{\usebox{\myCbox}}\fboxrule8pt\end{center}}
+%
+%
+\@ifclassloaded{beamer}{
+\RenewDocumentEnvironment{BigBox}{s O{bg} O{} O{1pt} m}{%
+\stopoutline
+\vspace*{-.5\outlineskip}
+\colorlet{CustomBeamerColorX}{#2}
+	\@maybepausing
+	\begingroup
+	\setbeamercolor{block title}{fg=black,bg=CustomBeamerColorX!85!black}
+	\setbeamercolor{block body}{fg=black,bg=CustomBeamerColorX}
+	\IfBooleanTF{#1}%
+		{\begin{block}}%
+		{\begin{block}{\large\scshape\bfseries#5}}%
 }%
 {\end{block}\vspace*{-\outlineskip}\endgroup\startoutline}
 
 }{}
 
-\newsavebox{\myBbox}
-\NewDocumentEnvironment{BigBox}{s O{white} O{1pt} m}{%
-\fboxrule#3
-	\begin{lrbox}{\myCbox}
-	~~\begin{minipage}{.85\linewidth}
-	\vspace*{.5\myex}
-	\textbf{\textsc{#4}}\\[-.5\baselineskip]
-	\hrule
-}
-{\vspace*{1\myex}\end{minipage}~~\end{lrbox}\fcolorbox{black}{#2}{\usebox{\myCbox}}\fboxrule8pt
-\par\noindent
-}
+%
+%
+%%%%%%%%%%%%%%%%%%%
+%% redefining beamer's frame environment
+%%%%%%%%%%%%%%%%%%%
+%
+%	This is necessary to make the option beamerpauseatstart work
+%
 
-%
-%
-%%%%%%%%%%%%%%%%%%%
-%%define frameoutline environment
-%%%%%%%%%%%%%%%%%%%
-%
-%
-\newenvironment{frameoutline}[1][c]{%
-	\begin{frame}[#1]%
-	\ZeroOutLeft\ignorespaces%
-	}
-	{\stopoutline\end{frame}}
+%% redefines the beginning of frame (from beamerbaseframe.sty) to include {\startoutline\ignorespaces}
+\@ifclassloaded{beamer}{\def\beamer@checkframetitle{{\ZeroOutLeft}\@ifnextchar\bgroup\beamer@inlineframetitle{}}}{}
+
 
 %end of package
